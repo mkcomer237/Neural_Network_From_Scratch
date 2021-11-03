@@ -44,16 +44,19 @@ class NeuralNet(object):
         self.y = y     
     
     def relu(self, z):
+        """Implement the relu activation function."""
         return np.maximum(0, z)
 
     def relu_derivative(self, z):
+        """Implement the derivative of the relu function."""
         return np.where(z < 0, 0, 1)
     
     def sigmoid_np(self, z):
+        """Implement the sigmoid function."""
         return 1/(1+np.exp(-1*z))
     
     def forward_prop(self):
-        
+        """Forward propagation step."""
         for i in range(1, self.n_layers):
             #print(i)
             self.Z[i] = np.dot(self.W[i], self.A[i-1]) + self.B[i] # W transpose not neccessary because of how we defined the matrix
@@ -65,12 +68,13 @@ class NeuralNet(object):
         # The last layer needs a sigmoid activation function 
             
     def cost_function(self):
+        """Calculate the cost function J."""
         self.J = -1*(1/self.m)*(np.dot(self.y, np.log(self.A[self.L].T))+
                                 np.dot(1-self.y, np.log(1-self.A[self.L].T)))
         #print(self.J.ravel()[0])
         
     def backward_prop(self):
-        
+        """Backward propagation step."""
         # Initialize the last layer with the sigmoid gradient 
         self.dZ[self.L] = -self.y + self.A[self.L] 
         self.dW[self.L] = (1/self.m)*np.dot(self.dZ[self.L], self.A[self.L-1].T)
@@ -85,8 +89,8 @@ class NeuralNet(object):
             self.dB[i] = (1/self.m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
-        
     def train(self, lr, num_iterations):
+        """Use gradient descent to train the model."""
         for i in range(num_iterations):
             #execute propagation steps
             self.forward_prop()
@@ -110,13 +114,14 @@ class NeuralNet(object):
             #print('W2 after', self.W2)
 
     def training_accuracy(self): 
+        """Calculate accuracy on the training dataset."""
         self.forward_prop() # Calculate A2 (output layer) with the latest weights
         #compare AL and y for accuracy 
         self.tp = np.where(self.A[self.L]>=0.5, 1, 0)
         return float((np.dot(self.y,self.tp.T) + np.dot(1-self.y,1-self.tp.T))/float(self.y.size)*100)
 
     def validation_accuracy(self, X_v, y_v):
-        
+        """Calculate accurace on the validation dataset."""
         # Do forward propagation on the validation set 
         Z_v = {}
         A_v = {}
