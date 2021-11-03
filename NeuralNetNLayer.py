@@ -98,7 +98,7 @@ class NeuralNet(object):
             self.backward_prop()
             #print(self.J.ravel()[0])
             if i%100==0:
-                print('Iteration:', i, ', Cost, Accuracy', self.J.ravel()[0], self.training_accuracy())
+                print('Iteration:', i, ', Cost, Accuracy', self.J.ravel()[0], self.training_accuracy)
                 if np.isnan(self.J):
                     print('Y:', self.y)
                     print('AL', self.A[self.L])
@@ -113,6 +113,7 @@ class NeuralNet(object):
                 self.B[i] -= lr*self.dB[i]
             #print('W2 after', self.W2)
 
+    @property
     def training_accuracy(self): 
         """Calculate accuracy on the training dataset."""
         self.forward_prop() # Calculate A2 (output layer) with the latest weights
@@ -120,6 +121,7 @@ class NeuralNet(object):
         self.tp = np.where(self.A[self.L]>=0.5, 1, 0)
         return float((np.dot(self.y,self.tp.T) + np.dot(1-self.y,1-self.tp.T))/float(self.y.size)*100)
 
+    @property
     def validation_accuracy(self, X_v, y_v):
         """Calculate accurace on the validation dataset."""
         # Do forward propagation on the validation set 
