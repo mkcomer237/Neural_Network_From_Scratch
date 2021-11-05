@@ -10,12 +10,14 @@ import numpy as np
 class NeuralNet(object):
     """Neural network accepting a list of layers."""
 
-    def __init__(self, X, y, layers=[4, 4, 2, 1]):
+    def __init__(self, X, y, layers=[4, 4, 2, 1], initialization='random'):
         """Initialize all of the model parameters.
 
         Takes in a list of layers and their size. Use dictionaries to store
-        W, B, Z, and A parameters.
+        W, B, Z, and A parameters.  Also initialize the W and B parameters
+        using either random or he initalization.
         """
+
         # dictionaries to store each value by layer number
         self.W = {}
         self.B = {}
@@ -30,14 +32,23 @@ class NeuralNet(object):
         self.n_layers = len(self.layers)
         self.L = self.n_layers - 1
 
+        # Initalize the weight and bias parameters.
         # following hidden layers have both r and c dimensions equal to the
         # n hidden units
+        if initialization not in ['random', 'he']:
+            raise Exception("Initalization must be either 'random' or 'he'")
         for i in range(1, self.n_layers):
             # print(i, i+1)
             # rows are the number of features in the previous layer, cols are
             # the next layer
-            self.W[i] = np.random.randn(self.layers[i], self.layers[i-1])*0.01
-            self.B[i] = np.zeros((self.layers[i], 1))
+            if initialization == 'he':
+                self.W[i] = (np.random.randn(self.layers[i], self.layers[i-1])
+                             * np.sqrt(2/self.layers[i-1]))
+                self.B[i] = np.zeros((self.layers[i], 1))
+            if initialization == 'random':
+                self.W[i] = (np.random.randn(self.layers[i], self.layers[i-1])
+                             * 0.01)
+                self.B[i] = np.zeros((self.layers[i], 1))
 
         # Set other key parameters
         self.m = np.shape(X)[1]
