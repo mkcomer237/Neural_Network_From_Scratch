@@ -91,7 +91,7 @@ class NeuralNet(object):
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
     def train(self, lr, num_iterations):
-        """Use gradient descent to train the model."""
+        """Use gradient descent to train the model.git """
         for i in range(num_iterations):
             # execute propagation steps
             self.forward_prop()
@@ -123,7 +123,6 @@ class NeuralNet(object):
         self.tp = np.where(self.A[self.L]>=0.5, 1, 0)
         return float((np.dot(self.y,self.tp.T) + np.dot(1-self.y,1-self.tp.T))/float(self.y.size)*100)
 
-    @property
     def validation_accuracy(self, X_v, y_v):
         """Calculate accurace on the validation dataset."""
         # Do forward propagation on the validation set
