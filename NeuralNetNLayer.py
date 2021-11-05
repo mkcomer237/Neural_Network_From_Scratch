@@ -30,10 +30,13 @@ class NeuralNet(object):
         self.n_layers = len(self.layers)
         self.L = self.n_layers - 1
 
-        # following hidden layers have both r and c dimensions equal to the n hidden units
+        # following hidden layers have both r and c dimensions equal to the
+        # n hidden units
         for i in range(1, self.n_layers):
             # print(i, i+1)
-            self.W[i] = np.random.randn(self.layers[i], self.layers[i-1])*0.01  # rows are the number of features in the previous layer, cols are the next layer
+            # rows are the number of features in the previous layer, cols are
+            # the next layer
+            self.W[i] = np.random.randn(self.layers[i], self.layers[i-1])*0.01
             self.B[i] = np.zeros((self.layers[i], 1))
 
         # Set other key parameters
@@ -58,7 +61,8 @@ class NeuralNet(object):
         """Forward propagation step."""
         for i in range(1, self.n_layers):
             # print(i)
-            self.Z[i] = np.dot(self.W[i], self.A[i-1]) + self.B[i]  # W transpose not neccessary because of how we defined the matrix
+            # W transpose not neccessary because of how we defined the matrix
+            self.Z[i] = np.dot(self.W[i], self.A[i-1]) + self.B[i]
             if i == self.n_layers-1:
                 self.A[i] = self.sigmoid_np(self.Z[i])
             else:
@@ -80,12 +84,14 @@ class NeuralNet(object):
                                             self.A[self.L-1].T)
         self.dB[self.L] = (1/self.m)*np.sum(self.dZ[self.L], axis=1,
                                             keepdims=True)
-        self.dA[self.L-1] = np.dot(self.W[self.L].T, self.dZ[self.L])  # this is used in the next layer's DZ
+        # this is used in the next layer's DZ
+        self.dA[self.L-1] = np.dot(self.W[self.L].T, self.dZ[self.L])
 
         # Calculate the gradients for the rest of the layers
         for i in reversed(range(1, self.n_layers-1)):
             # print(i)
-            self.dZ[i] = self.dA[i] * self.relu_derivative(self.Z[i])  # dA[i] comes from the previous backprobagation step - this is the key
+            # dA[i] comes from the previous backprobagation step - this is key
+            self.dZ[i] = self.dA[i] * self.relu_derivative(self.Z[i])
             self.dW[i] = (1/self.m)*np.dot(self.dZ[i], self.A[i-1].T)
             self.dB[i] = (1/self.m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
@@ -118,10 +124,12 @@ class NeuralNet(object):
     @property
     def training_accuracy(self):
         """Calculate accuracy on the training dataset."""
-        self.forward_prop()  # Calculate A2 (output layer) with the latest weights
+        self.forward_prop()  # Calculate A2 (output layer) with the latest
         # compare AL and y for accuracy
-        self.tp = np.where(self.A[self.L]>=0.5, 1, 0)
-        return float((np.dot(self.y,self.tp.T) + np.dot(1-self.y,1-self.tp.T))/float(self.y.size)*100)
+        self.tp = np.where(self.A[self.L] >= 0.5, 1, 0)
+        return float((np.dot(self.y, self.tp.T) + np.dot(1-self.y,
+                                                         1-self.tp.T)) /
+                     float(self.y.size)*100)
 
     def validation_accuracy(self, X_v, y_v):
         """Calculate accurace on the validation dataset."""
@@ -131,12 +139,14 @@ class NeuralNet(object):
         A_v[0] = X_v
 
         for i in range(1, self.n_layers):
-            Z_v[i] = np.dot(self.W[i], A_v[i-1]) + self.B[i]  # W transpose not neccessary because of how we defined the matrix
+            # W transpose not neccessary because of how we defined the matrix
+            Z_v[i] = np.dot(self.W[i], A_v[i-1]) + self.B[i]
             if i == self.n_layers-1:
                 A_v[i] = self.sigmoid_np(Z_v[i])
             else:
                 A_v[i] = self.relu(Z_v[i])
 
         # Calculate and return accuracy
-        tp = np.where(A_v[self.L]>=0.5, 1, 0)
-        return float((np.dot(y_v, tp.T) + np.dot(1-y_v, 1-tp.T))/float(y_v.size)*100)
+        tp = np.where(A_v[self.L] >= 0.5, 1, 0)
+        return float((np.dot(y_v, tp.T) + np.dot(1-y_v, 1-tp.T)) /
+                     float(y_v.size)*100)
