@@ -10,7 +10,8 @@ import numpy as np
 class NeuralNet(object):
     """Neural network accepting a list of layers."""
 
-    def __init__(self, X, y, layers=[4, 4, 2, 1], initialization='random'):
+    def __init__(self, X, y, layers=[4, 4, 2, 1], initialization='random',
+                 rseed=None):
         """Initialize all of the model parameters.
 
         Takes in a list of layers and their size. Use dictionaries to store
@@ -37,16 +38,18 @@ class NeuralNet(object):
         # n hidden units
         if initialization not in ['random', 'he']:
             raise Exception("Initalization must be either 'random' or 'he'")
+
+        rng = np.random.RandomState(rseed)
         for i in range(1, self.n_layers):
             # print(i, i+1)
             # rows are the number of features in the previous layer, cols are
             # the next layer
             if initialization == 'he':
-                self.W[i] = (np.random.randn(self.layers[i], self.layers[i-1])
+                self.W[i] = (rng.randn(self.layers[i], self.layers[i-1])
                              * np.sqrt(2/self.layers[i-1]))
                 self.B[i] = np.zeros((self.layers[i], 1))
             if initialization == 'random':
-                self.W[i] = (np.random.randn(self.layers[i], self.layers[i-1])
+                self.W[i] = (rng.randn(self.layers[i], self.layers[i-1])
                              * 0.01)
                 self.B[i] = np.zeros((self.layers[i], 1))
 
@@ -148,7 +151,9 @@ class NeuralNet(object):
 
     @property
     def training_accuracy(self):
-        """Calculate accuracy on the training dataset."""
+        """Calculate accuracy on the training dataset.
+        
+        Uses a 0.5 probability threshold for classification."""
         self.forward_prop()  # Calculate A2 (output layer) with the latest
         # compare AL and y for accuracy
         self.tp = np.where(self.A[self.L] >= 0.5, 1, 0)
