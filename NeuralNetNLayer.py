@@ -125,7 +125,16 @@ class NeuralNet(object):
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
     def train(self, lr, num_iterations, lambd=0):
-        """Use gradient descent to train the model.git """
+        """Use gradient descent to train the model.
+
+        The lambd parameter implements L2 regularization, and defaults to
+        lambda=0, which is no regularization.
+
+        the batch size parameter controls the training batch size. For example:
+        batch_size=1 is stochastic gradient descent.
+        batch_size=256 is minibatch gradient descent with batch size of 256.
+        batch_size=m is batch gradient descent on all trainin examples."""
+
         for i in range(num_iterations):
             # execute propagation steps
             self.forward_prop()
