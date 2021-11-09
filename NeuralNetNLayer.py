@@ -16,7 +16,7 @@ class NeuralNet(object):
 
         Takes in a list of layers and their size. Use dictionaries to store
         W, B, Z, and A parameters.  Also initialize the W and B parameters
-        using either random or he initalization.
+        using either random or he initalization and accept a random state.
         """
 
         # dictionaries to store each value by layer number
@@ -152,7 +152,7 @@ class NeuralNet(object):
     @property
     def training_accuracy(self):
         """Calculate accuracy on the training dataset.
-        
+
         Uses a 0.5 probability threshold for classification."""
         self.forward_prop()  # Calculate A2 (output layer) with the latest
         # compare AL and y for accuracy
