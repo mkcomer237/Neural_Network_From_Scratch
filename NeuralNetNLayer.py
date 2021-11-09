@@ -81,18 +81,31 @@ class NeuralNet(object):
 
         # The last layer needs a sigmoid activation function
 
-    def cost_function(self):
-        """Calculate the cost function J."""
-        self.J = -1*(1/self.m)*(np.dot(self.y, np.log(self.A[self.L].T)) +
-                                np.dot(1-self.y, np.log(1-self.A[self.L].T)))
+    def cost_function(self, lambd):
+        """Calculate the cost function J.
+
+        Optional regularization depending on lambda, defaults to no
+        regularization (lambd=0).
+        """
+        for i in range(1, self.n_layers):
+            frobenius_norm = np.sum(np.square(self.W[i]))
+            l2_reg_term = (lambd/(2*self.m))*frobenius_norm
+
+        self.J = (-1*(1/self.m)*(np.dot(self.y, np.log(self.A[self.L].T)) +
+                                 np.dot(1-self.y, np.log(1-self.A[self.L].T)))
+                  + l2_reg_term)
         # print(self.J.ravel()[0])
 
-    def backward_prop(self):
-        """Backward propagation step."""
+    def backward_prop(self, lambd):
+        """Backward propagation step.
+
+        Regularization is also implemented here depending on lambda.
+        lambd = 0 (the default value) means no regularization."""
         # Initialize the last layer with the sigmoid gradient
         self.dZ[self.L] = -self.y + self.A[self.L]
-        self.dW[self.L] = (1/self.m)*np.dot(self.dZ[self.L],
-                                            self.A[self.L-1].T)
+        self.dW[self.L] = ((1/self.m)*np.dot(self.dZ[self.L],
+                                             self.A[self.L-1].T) +
+                           (lambd / self.m) * self.W[self.L])
         self.dB[self.L] = (1/self.m)*np.sum(self.dZ[self.L], axis=1,
                                             keepdims=True)
         # this is used in the next layer's DZ
@@ -103,17 +116,18 @@ class NeuralNet(object):
             # print(i)
             # dA[i] comes from the previous backprobagation step - this is key
             self.dZ[i] = self.dA[i] * self.relu_derivative(self.Z[i])
-            self.dW[i] = (1/self.m)*np.dot(self.dZ[i], self.A[i-1].T)
+            self.dW[i] = ((1/self.m)*np.dot(self.dZ[i], self.A[i-1].T) +
+                          (lambd / self.m) * self.W[i])
             self.dB[i] = (1/self.m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
-    def train(self, lr, num_iterations):
+    def train(self, lr, num_iterations, lambd=0):
         """Use gradient descent to train the model.git """
         for i in range(num_iterations):
             # execute propagation steps
             self.forward_prop()
-            self.cost_function()
-            self.backward_prop()
+            self.cost_function(lambd)
+            self.backward_prop(lambd)
             # print(self.J.ravel()[0])
             if i % 100 == 0:
                 print('Iteration:', i, ', Cost, Accuracy', self.J.ravel()[0],
