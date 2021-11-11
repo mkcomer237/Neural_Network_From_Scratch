@@ -71,18 +71,23 @@ class NeuralNet(object):
         """Implement the sigmoid function."""
         return 1/(1+np.exp(-1*z))
 
-    def forward_prop(self):
-        """Forward propagation step."""
+    def forward_prop(self, X):
+        """Forward propagation step.
+
+        The global A[l] is overwritten here regardless of what X is being
+        used to initiate forward prop."""
+
+        self.A[0] = X
+
         for i in range(1, self.n_layers):
             # print(i)
             # W transpose not neccessary because of how we defined the matrix
             self.Z[i] = np.dot(self.W[i], self.A[i-1]) + self.B[i]
             if i == self.n_layers-1:
+                # The last layer needs a sigmoid activation function
                 self.A[i] = self.sigmoid_np(self.Z[i])
             else:
                 self.A[i] = self.relu(self.Z[i])
-
-        # The last layer needs a sigmoid activation function
 
     def cost_function(self, lambd):
         """Calculate the cost function J.
@@ -97,6 +102,7 @@ class NeuralNet(object):
         self.J = (-1*(1/self.m)*(np.dot(self.y, np.log(self.A[self.L].T)) +
                                  np.dot(1-self.y, np.log(1-self.A[self.L].T)))
                   + l2_reg_term)
+
         # print(self.J.ravel()[0])
 
     def backward_prop(self, lambd):
@@ -124,7 +130,7 @@ class NeuralNet(object):
             self.dB[i] = (1/self.m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
-    def train(self, lr, num_iterations, lambd=0):
+    def train(self, lr, num_iterations, lambd=0, batch_size=None):
         """Use gradient descent to train the model.
 
         The lambd parameter implements L2 regularization, and defaults to
@@ -135,9 +141,24 @@ class NeuralNet(object):
         batch_size=256 is minibatch gradient descent with batch size of 256.
         batch_size=m is batch gradient descent on all trainin examples."""
 
+        if batch_size is None:
+            batch_size = self.m
+        elif batch_size >= self.m/2:
+            raise Exception('Batch size is too large')
+
+        X = self.X
+        y = self.y
+
         for i in range(num_iterations):
+
+            # forward prop backward prop and cost need to be implemented
+            # in the mini batch
+            # First modify so that X and y are inputs, not global parameters
+            # Keep X in the init, but change prop functions to accept x params
+            # for i in self.m/
+
             # execute propagation steps
-            self.forward_prop()
+            self.forward_prop(X)
             self.cost_function(lambd)
             self.backward_prop(lambd)
             # print(self.J.ravel()[0])
@@ -163,7 +184,7 @@ class NeuralNet(object):
         """Calculate accuracy on the training dataset.
 
         Uses a 0.5 probability threshold for classification."""
-        self.forward_prop()  # Calculate A2 (output layer) with the latest
+        self.forward_prop(self.X)  # Calculate A2 (output layer) with latest
         # compare AL and y for accuracy
         self.tp = np.where(self.A[self.L] >= 0.5, 1, 0)
         return float((np.dot(self.y, self.tp.T) + np.dot(1-self.y,
