@@ -17,9 +17,14 @@ class NeuralNet(object):
         Takes in a list of layers and their size. Use dictionaries to store
         W, B, Z, and A parameters.  Also initialize the W and B parameters
         using either random or he initalization and accept a random state.
+        These will be global parameters that are overwritten with each training
+        batch.
+
+        X and y are also initialized and synchronously randomized here but
+        then further subsegmented during mini-batch training.
         """
 
-        # dictionaries to store each value by layer number
+        # Dictionaries to store each value by layer number
         self.W = {}
         self.B = {}
         self.Z = {}
@@ -53,11 +58,12 @@ class NeuralNet(object):
                              * 0.01)
                 self.B[i] = np.zeros((self.layers[i], 1))
 
-        # Set other key parameters
+        # Set other base parameters
+        # Shuffle the training data to prepare for minibatch
         self.m = np.shape(X)[1]
-        self.X = X
-        self.A[0] = X
-        self.y = y
+        perm = np.random.permutation(self.m)
+        self.X = X[:, perm]
+        self.y = y[:, perm]
 
     def relu(self, z):
         """Implement the relu activation function."""
@@ -89,34 +95,37 @@ class NeuralNet(object):
             else:
                 self.A[i] = self.relu(self.Z[i])
 
-    def cost_function(self, lambd):
+    def cost_function(self, y, m, lambd):
         """Calculate the cost function J.
 
         Optional regularization depending on lambda, defaults to no
         regularization (lambd=0).
         """
+
+        l2_reg_term = 0
+
         for i in range(1, self.n_layers):
             frobenius_norm = np.sum(np.square(self.W[i]))
-            l2_reg_term = (lambd/(2*self.m))*frobenius_norm
+            l2_reg_term += (lambd/(2*m))*frobenius_norm
 
-        self.J = (-1*(1/self.m)*(np.dot(self.y, np.log(self.A[self.L].T)) +
-                                 np.dot(1-self.y, np.log(1-self.A[self.L].T)))
+        self.J = (-1 * (1 / m)*(np.dot(y, np.log(self.A[self.L].T)) +
+                                np.dot(1-y, np.log(1-self.A[self.L].T)))
                   + l2_reg_term)
 
         # print(self.J.ravel()[0])
 
-    def backward_prop(self, lambd):
+    def backward_prop(self, y, m, lambd):
         """Backward propagation step.
 
         Regularization is also implemented here depending on lambda.
         lambd = 0 (the default value) means no regularization."""
         # Initialize the last layer with the sigmoid gradient
-        self.dZ[self.L] = -self.y + self.A[self.L]
-        self.dW[self.L] = ((1/self.m)*np.dot(self.dZ[self.L],
-                                             self.A[self.L-1].T) +
-                           (lambd / self.m) * self.W[self.L])
-        self.dB[self.L] = (1/self.m)*np.sum(self.dZ[self.L], axis=1,
-                                            keepdims=True)
+        self.dZ[self.L] = -y + self.A[self.L]
+        self.dW[self.L] = ((1 / m)*np.dot(self.dZ[self.L],
+                                          self.A[self.L-1].T) +
+                           (lambd / m) * self.W[self.L])
+        self.dB[self.L] = (1 / m)*np.sum(self.dZ[self.L], axis=1,
+                                         keepdims=True)
         # this is used in the next layer's DZ
         self.dA[self.L-1] = np.dot(self.W[self.L].T, self.dZ[self.L])
 
@@ -125,9 +134,9 @@ class NeuralNet(object):
             # print(i)
             # dA[i] comes from the previous backprobagation step - this is key
             self.dZ[i] = self.dA[i] * self.relu_derivative(self.Z[i])
-            self.dW[i] = ((1/self.m)*np.dot(self.dZ[i], self.A[i-1].T) +
-                          (lambd / self.m) * self.W[i])
-            self.dB[i] = (1/self.m)*np.sum(self.dZ[i], axis=1, keepdims=True)
+            self.dW[i] = ((1 / m)*np.dot(self.dZ[i], self.A[i-1].T) +
+                          (lambd / m) * self.W[i])
+            self.dB[i] = (1 / m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
     def train(self, lr, num_iterations, lambd=0, batch_size=None):
@@ -139,49 +148,52 @@ class NeuralNet(object):
         the batch size parameter controls the training batch size. For example:
         batch_size=1 is stochastic gradient descent.
         batch_size=256 is minibatch gradient descent with batch size of 256.
-        batch_size=m is batch gradient descent on all trainin examples."""
+        batch_size=m (default) is batch gradient descent on all training
+        examples at once."""
 
         if batch_size is None:
             batch_size = self.m
-        elif batch_size >= self.m/2:
+        elif batch_size > self.m:
             raise Exception('Batch size is too large')
 
-        X = self.X
-        y = self.y
+        print('batch size: ', batch_size)
 
-        for i in range(num_iterations):
+        for epoch in range(num_iterations):
 
-            # forward prop backward prop and cost need to be implemented
-            # in the mini batch
-            # First modify so that X and y are inputs, not global parameters
-            # Keep X in the init, but change prop functions to accept x params
-            # for i in self.m/
+            # Mini batch inner loop
+            for i in np.arange(0, self.m, batch_size):
 
-            # execute propagation steps
-            self.forward_prop(X)
-            self.cost_function(lambd)
-            self.backward_prop(lambd)
-            # print(self.J.ravel()[0])
-            if i % 100 == 0:
-                print('Iteration:', i, ', Cost, Accuracy', self.J.ravel()[0],
+                # subset the training data according to the batch size
+                end = min(i + batch_size, self.m)
+                X = self.X[:, i:end]
+                y = self.y[:, i:end]
+                m = end-i
+
+                # print('X:', X, y)
+                # Forward and backward propagation
+                self.forward_prop(X)
+                self.cost_function(y, m, lambd)
+                self.backward_prop(y, m, lambd)
+
+                # Update weights with the gradients
+                for ly in range(1, self.n_layers):
+                    self.W[ly] -= lr*self.dW[ly]
+                    self.B[ly] -= lr*self.dB[ly]
+
+            # Print training accuracy
+            # This is measured on the entire dataset
+            if epoch % 100 == 0:
+                print('Iteration:', epoch, ', Cost, Accuracy',
+                      self.J.ravel()[0],
                       self.training_accuracy)
-                if np.isnan(self.J):
-                    print('Y:', self.y)
-                    print('AL', self.A[self.L])
-                    break
-                # print(self.W[4])
-                # print(self.dW[4])
-            # Update weights with the gradients
-            # print('W2 before', self.W2)
-            # print('updated weights',  self.W2-lr*self.dW2 )
-            for i in range(1, self.n_layers):
-                self.W[i] -= lr*self.dW[i]
-                self.B[i] -= lr*self.dB[i]
-            # print('W2 after', self.W2)
+            if np.isnan(self.J):
+                print('Y:', self.y)
+                print('AL', self.A[self.L])
+                break
 
     @property
     def training_accuracy(self):
-        """Calculate accuracy on the training dataset.
+        """Calculate accuracy on the whole training dataset.
 
         Uses a 0.5 probability threshold for classification."""
         self.forward_prop(self.X)  # Calculate A2 (output layer) with latest
