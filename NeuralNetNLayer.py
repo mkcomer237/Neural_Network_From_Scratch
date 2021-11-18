@@ -118,7 +118,9 @@ class NeuralNet(object):
         """Backward propagation step.
 
         Regularization is also implemented here depending on lambda.
-        lambd = 0 (the default value) means no regularization."""
+        lambd = 0 (the default value) means no regularization.
+        """
+
         # Initialize the last layer with the sigmoid gradient
         self.dZ[self.L] = -y + self.A[self.L]
         self.dW[self.L] = ((1 / m)*np.dot(self.dZ[self.L],
@@ -139,7 +141,7 @@ class NeuralNet(object):
             self.dB[i] = (1 / m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
-    def train(self, lr, num_iterations, lambd=0, batch_size=None):
+    def train(self, lr, num_iterations, lambd=0, batch_size=None, beta=0):
         """Use gradient descent to train the model.
 
         The lambd parameter implements L2 regularization, and defaults to
@@ -149,8 +151,21 @@ class NeuralNet(object):
         batch_size=1 is stochastic gradient descent.
         batch_size=256 is minibatch gradient descent with batch size of 256.
         batch_size=m (default) is batch gradient descent on all training
-        examples at once."""
+        examples at once.
 
+        Momentum is used to update the weights if the parameter beta is greater
+        than 0. The v parameter the is the velocity from the previous steps
+        dw."""
+
+        # initialize the velocity parameter
+
+        v_W = {}
+        v_B = {}
+        for i in range(1, self.n_layers):
+            v_W[i] = np.zeros(self.W[i].shape)
+            v_B[i] = np.zeros(self.B[i].shape)
+
+        # check batch size
         if batch_size is None:
             batch_size = self.m
         elif batch_size > self.m:
@@ -175,10 +190,13 @@ class NeuralNet(object):
                 self.cost_function(y, m, lambd)
                 self.backward_prop(y, m, lambd)
 
-                # Update weights with the gradients
+                # Update weights with the gradients using momentum
+                # if beta == 0 this is equivalent to not using momentum
                 for ly in range(1, self.n_layers):
-                    self.W[ly] -= lr*self.dW[ly]
-                    self.B[ly] -= lr*self.dB[ly]
+                    v_W[ly] = beta * v_W[ly] + (1 - beta) * (self.dW[ly])
+                    v_B[ly] = beta * v_B[ly] + (1 - beta) * (self.dB[ly])
+                    self.W[ly] -= lr * v_W[ly]
+                    self.B[ly] -= lr * v_B[ly]
 
             # Print training accuracy
             # This is measured on the entire dataset
