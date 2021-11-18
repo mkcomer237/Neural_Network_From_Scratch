@@ -1,6 +1,8 @@
-"""Create a neural network class that can be trained with n layers.
+"""A neural network class that can be trained with a variable number of layers.
 
-See the readme for a more complete description of the training steps.
+Users can specify the number in dimensions of each later well as a number of
+parameters that will inference initialization and the optimization algorithm in
+training.
 """
 
 
@@ -8,22 +10,51 @@ import numpy as np
 
 
 class NeuralNet(object):
-    """Neural network accepting a list of layers."""
+    """Neural network accepting a list of layers.
+
+    To use instantiate the class with the parameters listed below, and call the
+    train method to train the model weights.
+
+    Initialization Parameters
+    ----------
+    X : np.array()
+        A numpy array containing the training x values in the dataset. The rows
+        of the array should be the features and the columns of the array should
+        be the observations: shape(n_x, m), where m is the number of
+        observations.
+    y : np.array()
+        The corresponding y values from the training data set. This should be a
+        single row array with one column for each observation in the dataset:
+        shape(1, m)
+    layers : list()
+        A list representing the number of layers and the dimension of each
+        hidden layer in the neural network.  For example [4, 4, 2, 1]
+        indicates a neural network 4 hidden units in the first layer, 4
+        hidden units in the second layer, to hidden units in the third layer,
+        and one unit in the last layer for classification.  The dimension of
+        the last layer layer must always be one for binary classification.
+    initialization : str()
+        Specify the type of parameter initially is a initialization for the
+        weights W.  Specifying 'he' will use he initialization instead of
+        random.
+    r_seed : int
+        Specify a random seed for numpy to create reproducable results.
+    """
 
     def __init__(self, X, y, layers=[4, 4, 2, 1], initialization='random',
                  rseed=None):
         """Initialize all of the model parameters.
 
-        Takes in a list of layers and their size. Use dictionaries to store
-        W, B, Z, and A parameters.  Also initialize the W and B parameters
-        using either random or he initalization and accept a random state.
-        These will be global parameters that are overwritten with each training
-        batch.
+        Take in all of the model parameters specified in the class docstring.
+
+        Use dictionaries to store W, B, Z, and A parameters.  Also initialize
+        the W and B parameters using either random or he initalization and
+        accept a random state. These will be global parameters that are
+        overwritten with each training batch.
 
         X and y are also initialized and synchronously randomized here but
         then further subsegmented during mini-batch training.
         """
-
         # Dictionaries to store each value by layer number
         self.W = {}
         self.B = {}
@@ -38,15 +69,12 @@ class NeuralNet(object):
         self.n_layers = len(self.layers)
         self.L = self.n_layers - 1
 
-        # Initalize the weight and bias parameters.
-        # following hidden layers have both r and c dimensions equal to the
-        # n hidden units
+        # Initalize the weight and bias parameters with random values.
         if initialization not in ['random', 'he']:
             raise Exception("Initalization must be either 'random' or 'he'")
 
         rng = np.random.RandomState(rseed)
         for i in range(1, self.n_layers):
-            # print(i, i+1)
             # rows are the number of features in the previous layer, cols are
             # the next layer
             if initialization == 'he':
@@ -78,15 +106,21 @@ class NeuralNet(object):
         return 1/(1+np.exp(-1*z))
 
     def forward_prop(self, X):
-        """Forward propagation step.
+        """
+        Forward propagation step.
 
-        The global A[l] is overwritten here regardless of what X is being
-        used to initiate forward prop."""
+        Saves the intermediate A[i] and Z[i] for later use, as well as the
+        final A value to use in prediction and measuring accuracy.
 
+        Parameters
+        ----------
+        X : np.array()
+            The X training values with features as rows and observations as
+            columns.
+        """
         self.A[0] = X
 
         for i in range(1, self.n_layers):
-            # print(i)
             # W transpose not neccessary because of how we defined the matrix
             self.Z[i] = np.dot(self.W[i], self.A[i-1]) + self.B[i]
             if i == self.n_layers-1:
@@ -98,10 +132,16 @@ class NeuralNet(object):
     def cost_function(self, y, m, lambd):
         """Calculate the cost function J.
 
-        Optional regularization depending on lambda, defaults to no
-        regularization (lambd=0).
+        Parameters
+        ----------
+        y : np.array()
+            The true values from the training data.
+        m : int
+            The number of observations in the training data.
+        lambd : float
+            be l2 regularization parameter the default of 0 is equivalent
+            to no regularization.
         """
-
         l2_reg_term = 0
 
         for i in range(1, self.n_layers):
@@ -112,15 +152,19 @@ class NeuralNet(object):
                                 np.dot(1-y, np.log(1-self.A[self.L].T)))
                   + l2_reg_term)
 
-        # print(self.J.ravel()[0])
-
     def backward_prop(self, y, m, lambd):
         """Backward propagation step.
 
-        Regularization is also implemented here depending on lambda.
-        lambd = 0 (the default value) means no regularization.
+        Parameters
+        ----------
+        y : np.array()
+            The true values from the training data.
+        m : int
+            The number of observations in the training data.
+        lambd : float
+            be l2 regularization parameter the default of 0 is equivalent
+            to no regularization.
         """
-
         # Initialize the last layer with the sigmoid gradient
         self.dZ[self.L] = -y + self.A[self.L]
         self.dW[self.L] = ((1 / m)*np.dot(self.dZ[self.L],
@@ -133,7 +177,6 @@ class NeuralNet(object):
 
         # Calculate the gradients for the rest of the layers
         for i in reversed(range(1, self.n_layers-1)):
-            # print(i)
             # dA[i] comes from the previous backprobagation step - this is key
             self.dZ[i] = self.dA[i] * self.relu_derivative(self.Z[i])
             self.dW[i] = ((1 / m)*np.dot(self.dZ[i], self.A[i-1].T) +
@@ -143,26 +186,38 @@ class NeuralNet(object):
 
     def update_lr(self, lr, epoch, decay_rate, time_interval):
         """Update the learning rate using exponential weight decay."""
-
         return lr * (1 / (1 + np.floor(epoch / time_interval) * decay_rate))
 
-    def train(self, lr0, num_iterations, lambd=0, batch_size=None, beta=0,
+    def train(self, lr0, num_epochs, lambd=0, batch_size=None, beta=0,
               decay_rate=0, time_interval=100):
-        """Use gradient descent to train the model.
+        """Use a variation of gradient descent to train the model.
 
-        The lambd parameter implements L2 regularization, and defaults to
-        lambda=0, which is no regularization.
-
-        the batch size parameter controls the training batch size. For example:
-        batch_size=1 is stochastic gradient descent.
-        batch_size=256 is minibatch gradient descent with batch size of 256.
-        batch_size=m (default) is batch gradient descent on all training
-        examples at once.
-
-        Momentum is used to update the weights if the parameter beta is greater
-        than 0. The v parameter the is the velocity from the previous steps
-        dw."""
-
+        Parameters
+        ----------
+        lr0 : float
+            The starting learning rate when training
+        num_epochs : int
+            The number of iterations on the whole training data
+        lambd : float, optional
+            Set the strength of L2 regularization applied during training.
+            Defaults to 0 which is no regularization.
+        batch_size : int, optional
+            The batch size for minibatch gradient descent. Use 1 for
+            stochastic gradient descent. Defaults to None which tells the
+            algorithm to use the entire training set (full batch).
+        beta : float, optional
+            Set the strength of momentum used in updating the weights.
+            Defaults to 0 which indicates no momentum and can range from 0
+            to 1.
+        decay_rate : float, optional
+            Set the learning rate decay. This should be from 0 to 1 both higher
+            decay indicating a bigger drop.  This defaults to 0 which indicates
+            no decay.
+        time_interval : int, optional
+            Sets how frequently the learning rate decay is applied. The default
+            value of 100 indicates that the learning rate drops every 100
+            epochs.
+        """
         # initialize the velocity parameter
 
         v_W = {}
@@ -182,7 +237,7 @@ class NeuralNet(object):
 
         print('batch size: ', batch_size)
 
-        for epoch in range(num_iterations):
+        for epoch in range(num_epochs):
 
             # Mini batch inner loop
             for i in np.arange(0, self.m, batch_size):
@@ -193,7 +248,6 @@ class NeuralNet(object):
                 y = self.y[:, i:end]
                 m = end-i
 
-                # print('X:', X, y)
                 # Forward and backward propagation
                 self.forward_prop(X)
                 self.cost_function(y, m, lambd)
@@ -227,7 +281,8 @@ class NeuralNet(object):
     def training_accuracy(self):
         """Calculate accuracy on the whole training dataset.
 
-        Uses a 0.5 probability threshold for classification."""
+        Uses a 0.5 probability threshold for classification.
+        """
         self.forward_prop(self.X)  # Calculate A2 (output layer) with latest
         # compare AL and y for accuracy
         self.tp = np.where(self.A[self.L] >= 0.5, 1, 0)
@@ -236,7 +291,19 @@ class NeuralNet(object):
                      float(self.y.size)*100)
 
     def validation_accuracy(self, X_v, y_v):
-        """Calculate accurace on the validation dataset."""
+        """Calculate accurace on the validation dataset.
+
+        Uses a 0.5 probability threshold for classification.
+
+        Parameters
+        ----------
+        X_v : np.array()
+            A numpy array of the X validation set with features as rows and
+            observations as columns.
+        y_v : np.array()
+            A numpy array of the y validation set with one column per
+            observation.
+        """
         # Do forward propagation on the validation set
         Z_v = {}
         A_v = {}
