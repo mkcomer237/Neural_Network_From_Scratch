@@ -141,7 +141,13 @@ class NeuralNet(object):
             self.dB[i] = (1 / m)*np.sum(self.dZ[i], axis=1, keepdims=True)
             self.dA[i-1] = np.dot(self.W[i].T, self.dZ[i])
 
-    def train(self, lr, num_iterations, lambd=0, batch_size=None, beta=0):
+    def update_lr(self, lr, epoch, decay_rate, time_interval):
+        """Update the learning rate using exponential weight decay."""
+
+        return lr * (1 / (1 + np.floor(epoch / time_interval) * decay_rate))
+
+    def train(self, lr0, num_iterations, lambd=0, batch_size=None, beta=0,
+              decay_rate=0, time_interval=100):
         """Use gradient descent to train the model.
 
         The lambd parameter implements L2 regularization, and defaults to
@@ -164,6 +170,9 @@ class NeuralNet(object):
         for i in range(1, self.n_layers):
             v_W[i] = np.zeros(self.W[i].shape)
             v_B[i] = np.zeros(self.B[i].shape)
+
+        # initialize the learning rate
+        lr = lr0
 
         # check batch size
         if batch_size is None:
@@ -201,13 +210,18 @@ class NeuralNet(object):
             # Print training accuracy
             # This is measured on the entire dataset
             if epoch % 100 == 0:
-                print('Iteration:', epoch, ', Cost, Accuracy',
+                print('Iteration:', epoch, ', Cost, Accuracy, lr: ',
                       self.J.ravel()[0],
-                      self.training_accuracy)
+                      self.training_accuracy,
+                      lr)
             if np.isnan(self.J):
                 print('Y:', self.y)
                 print('AL', self.A[self.L])
                 break
+
+            # Update the learning rate using exponential weight decay
+            if decay_rate > 0:
+                lr = self.update_lr(lr0, epoch, decay_rate, time_interval)
 
     @property
     def training_accuracy(self):
