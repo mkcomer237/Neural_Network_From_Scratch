@@ -1,9 +1,9 @@
 ## Multilayer Neural Network from Scratch
 
-This is an exercise to build up a multilayer neural network from scratch using
-only the numpy library for binary classification. A number of different
-optimization algorithm options are offered to improve the performance of
-standard gradient descent.
+This is an exercise to build up a multilayer neural network for binary 
+classification from scratch using only the numpy library. A number of 
+different optimization algorithm options are offered to improve the performance
+of standard gradient descent.
 
 ### How to use
 
@@ -17,8 +17,10 @@ last layer must always be one. For example:
     clf.train(0.3, 500)
 
 This code will create a neural network object with 6 hidden layers in the first
-layer and 3 hidden layers in the second layer.
+layer and 3 hidden layers in the second layer.  To to test against the validation 
+set call validation_accuracy method and feed in a validation X and Y dataset:
 
+    clf.validation_accuracy(X_v=X_v, y_v=y_v)
 
 See the notebook tests_and_examples.ipynb for an example workflow on the MNIST
 dataset.
