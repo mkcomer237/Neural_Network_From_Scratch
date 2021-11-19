@@ -26,7 +26,7 @@ dataset.
 
 ### Initialization and training parameters
 
-Initialization Parameters
+**Initialization Parameters**
 
 **X** : np.array()
 
@@ -65,7 +65,7 @@ random.
 Specify a random seed for numpy to create reproducable results.
 
 
-Training Parameters
+**Training Parameters**
 
 **lr0** : float
 
