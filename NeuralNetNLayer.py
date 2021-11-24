@@ -143,13 +143,16 @@ class NeuralNet(object):
             to no regularization.
         """
         l2_reg_term = 0
+        epsilon = 1e-8
 
         for i in range(1, self.n_layers):
             frobenius_norm = np.sum(np.square(self.W[i]))
             l2_reg_term += (lambd/(2*m))*frobenius_norm
 
-        self.J = (-1 * (1 / m)*(np.dot(y, np.log(self.A[self.L].T)) +
-                                np.dot(1-y, np.log(1-self.A[self.L].T)))
+        self.J = (-1 * (1 / m)*(np.dot(y, np.log(self.A[self.L].T +
+                                                 epsilon)) +
+                                np.dot(1-y, np.log(1-self.A[self.L].T +
+                                                   epsilon)))
                   + l2_reg_term)
 
     def backward_prop(self, y, m, lambd):
@@ -264,6 +267,9 @@ class NeuralNet(object):
             # Print training accuracy
             # This is measured on the entire dataset
             if epoch % 100 == 0:
+                # Forward prop and cost on the whole dataset
+                self.forward_prop(self.X)
+                self.cost_function(self.y, self.m, lambd)
                 print('Iteration:', epoch, ', Cost, Accuracy, lr: ',
                       self.J.ravel()[0],
                       self.training_accuracy,
