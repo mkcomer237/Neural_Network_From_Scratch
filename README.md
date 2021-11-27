@@ -16,9 +16,10 @@ last layer must always be one. For example:
     clf = NeuralNet(X_t, y_t, [6, 3, 1], initialization = 'he', rseed=9)
     clf.train(0.3, 500)
 
-This code will create a neural network object with 6 hidden layers in the first
-layer and 3 hidden layers in the second layer.  To to test against the validation 
-set call validation_accuracy method and feed in a validation X and Y dataset:
+This code will create a neural network object with 6 nodes in the first hidden
+layer and 3 nodes in the second hidden layer.  To to test against the 
+validation set call validation_accuracy method and feed in a validation X and
+Y dataset:
 
     clf.validation_accuracy(X_v=X_v, y_v=y_v)
 
